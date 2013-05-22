@@ -384,8 +384,9 @@ send_payload(#state{out_socket = Socket
     Packet = [<<2:8,
                 FrameLength:32/big,
                 Frame/binary>>],
-    InfoLoggerFun("[ ~p ] Sending msg ~p (expires on ~p)",
-                         [Name, MsgId, Expiry]),
+    % IRCCloud Patch, this is only useful for debugging
+    % InfoLoggerFun("[ ~p ] Sending msg ~p (expires on ~p): [~B] ~s~n~p~n",
+    %                      [Name, MsgId, Expiry, erlang:size(Payload), Payload, Packet]),
     ssl:send(Socket, Packet).
 
 hexstr_to_bin(S) ->
