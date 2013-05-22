@@ -37,13 +37,14 @@ start_connection(Name, Connection) ->
 %% Supervisor callbacks
 %% ===================================================================
 %% @hidden
+% IRCCloud patch: changed restart intensity
 -spec init(_) ->
   {ok,
-   {{simple_one_for_one, 5, 10},
+   {{simple_one_for_one, 10000, 1},
     [{connection, {apns_connection, start_link, []},
       transient, 5000, worker, [apns_connection]}]}}.
 init(_) ->
   {ok,
-   {{simple_one_for_one, 5, 10},
+   {{simple_one_for_one, 10000, 1},
     [{connection, {apns_connection, start_link, []},
       transient, 5000, worker, [apns_connection]}]}}.

@@ -82,6 +82,8 @@ init(Connection) ->
 %% @hidden
 -spec init(atom(), apns:connection()) -> {ok, state() | {stop, term()}}.
 init(Name, Connection) ->
+  % IRCCloud patch: add a delay before restarting
+  timer:sleep(500),
   try
     {ok, QID} = apns_queue:start_link(),
     Timeout = epoch() + Connection#apns_connection.expires_conn,
