@@ -327,8 +327,9 @@ code_change(_OldVsn, State, _Extra) ->  {ok, State}.
 %% Private functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 build_payload(Params, Extra, Content_Available) ->
-  jiffy:encode(
-    {[{<<"aps">>, do_build_payload(Params, Content_Available)} | Extra]}).
+  % IRCCloud patch: use our safe json_encoder
+  iolist_to_binary(irccloud_json:encode(
+    {[{<<"aps">>, do_build_payload(Params, Content_Available)} | Extra]})).
 
 do_build_payload(Params, Content_Available) when Content_Available ->
   do_build_payload(Params, [{<<"content-available">>, 1}]);
