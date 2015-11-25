@@ -1,6 +1,7 @@
 .rebar/
 deps
 ebin
+!*.appup
 log/*.log
 tmp
 tmp/**/*
