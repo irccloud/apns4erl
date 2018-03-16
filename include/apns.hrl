@@ -18,7 +18,7 @@
                           feedback_fun      = fun erlang:display/1                  :: fun(({calendar:datetime(), string()}) -> _),
                           feedback_timeout  = 30*60*1000                            :: pos_integer(),
                           expires_conn      = 300                                   :: pos_integer(),
-                          extra_ssl_opts    = []                                    :: [ssl:ssloption()],
+                          extra_ssl_opts    = []                                    :: [ssl:ssl_option()],
                           error_logger_fun  = fun error_logger:error_msg/2          :: fun((string(), list()) -> _),
                           info_logger_fun   = fun error_logger:info_msg/2           :: fun((string(), list()) -> _)
                           }).

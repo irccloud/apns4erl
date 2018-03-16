@@ -41,7 +41,7 @@
 
 -type apns_str() :: binary() | string().
 -type alert() :: apns_str() | #loc_alert{}.
--export_type([alert/0]).
+-export_type([alert/0, apns_str/0]).
 
 -type msg() :: #apns_msg{}.
 -export_type([msg/0]).
