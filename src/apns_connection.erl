@@ -379,8 +379,8 @@ do_build_payload([], Payload) ->
 -spec send_payload(tuple(), binary(), non_neg_integer(),
     binary(), binary(), integer()) ->   ok | {error, term()}.
 send_payload(#state{out_socket = Socket
-                   , info_logger_fun = InfoLoggerFun
-                   , name = Name}, MsgId, Expiry, BinToken
+                   , info_logger_fun = _InfoLoggerFun
+                   , name = _Name}, MsgId, Expiry, BinToken
             , Payload, Priority) ->
     Frame = build_frame(MsgId, Expiry, BinToken, Payload, Priority),
     FrameLength = erlang:size(Frame),

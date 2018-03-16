@@ -35,7 +35,7 @@ minimal(Config) ->
   ok =
     apns:send_message(
       ?TEST_CONNECTION, ?DEVICE_TOKEN,
-      Now ++ " - Test Alert", random:uniform(10), "chime"),
+      Now ++ " - Test Alert", rand:uniform(10), "chime"),
   monitor_process_for_a_second(Ref),
 
   ok =
@@ -47,20 +47,20 @@ minimal(Config) ->
                   body   = Now ++ " - Localized Body",
                   image  = none,
                   key    = "KEY"},
-      random:uniform(10),
+      rand:uniform(10),
       "chime"),
   monitor_process_for_a_second(Ref),
 
   ok =
     apns:send_message(
       ?TEST_CONNECTION, ?DEVICE_TOKEN, #loc_alert{key = "EMPTY"},
-      random:uniform(10), "chime"),
+      rand:uniform(10), "chime"),
   monitor_process_for_a_second(Ref),
 
   ok =
     apns:send_message(
       ?TEST_CONNECTION, ?DEVICE_TOKEN, Now ++ " - Test Alert",
-      random:uniform(10), "chime",
+      rand:uniform(10), "chime",
       apns:expiry(86400), [{<<"acme1">>, 1}]),
   monitor_process_for_a_second(Ref),
 
@@ -72,7 +72,7 @@ minimal(Config) ->
                   body   = Now ++ " - Localized Body",
                   image  = none,
                   key    = "KEY"},
-      random:uniform(10), "chime",
+      rand:uniform(10), "chime",
       apns:expiry(86400),
       [ {<<"acme2">>, <<"x">>},
         {<<"acme3">>, {[{<<"acme4">>, false}]}}]),
