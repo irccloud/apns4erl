@@ -82,32 +82,17 @@ init(Connection) ->
 %% @hidden
 -spec init(atom(), apns:connection()) -> {ok, state() | {stop, term()}}.
 init(Name, Connection) ->
-  % IRCCloud patch: add a delay before restarting
-  timer:sleep(500),
-  try
-    {ok, QID} = apns_queue:start_link(),
-    Timeout = epoch() + Connection#apns_connection.expires_conn,
-    case open_out(Connection) of
-      {ok, OutSocket} -> case open_feedback(Connection) of
-          {ok, InSocket} ->
-            {ok, #state{ out_socket = OutSocket
-                       , in_socket  = InSocket
-                       , connection = Connection
-                       , queue      = QID
-                       , out_expires = Timeout
-                       , name = Name
-                       , error_logger_fun =
-                          Connection#apns_connection.error_logger_fun
-                       , info_logger_fun  =
-                          Connection#apns_connection.info_logger_fun
-                       }};
-          {error, Reason} -> {stop, Reason}
-        end;
-      {error, Reason} -> {stop, Reason}
-    end
-  catch
-    _:{error, Reason2} -> {stop, Reason2}
-  end.
+  % IRCCloud patch: move socket connection init outside gen_server init
+  self() ! init_sockets,
+
+  {ok, QID} = apns_queue:start_link(),
+  {ok, #state{
+    name = Name,
+    connection = Connection,
+    queue = QID,
+    error_logger_fun = Connection#apns_connection.error_logger_fun,
+    info_logger_fun = Connection#apns_connection.info_logger_fun
+  }}.
 
 %% @hidden
 ssl_opts(Connection) ->
@@ -213,8 +198,28 @@ handle_cast(stop, State) ->
 
 %% @hidden
 -spec handle_info(
+    init_sockets |
     {ssl, tuple(), binary()} | {ssl_closed, tuple()} | X, state()) ->
       {noreply, state()} | {stop, ssl_closed | {unknown_request, X}, state()}.
+handle_info(init_sockets, State = #state{connection=Connection}) ->
+  try
+    Timeout = epoch() + Connection#apns_connection.expires_conn,
+    case open_out(Connection) of
+      {ok, OutSocket} -> case open_feedback(Connection) of
+          {ok, InSocket} ->
+            {noreply, State#state{
+              out_socket = OutSocket,
+              in_socket  = InSocket,
+              out_expires = Timeout
+            }};
+          {error, Reason} -> {stop, Reason}
+        end;
+      {error, Reason} -> {stop, Reason}
+    end
+  catch
+    _:{error, Reason2} -> {stop, Reason2}
+  end;
+
 handle_info( {ssl, SslSocket, Data}
            , State = #state{ out_socket = SslSocket
                            , connection = #apns_connection{error_fun = Error}
