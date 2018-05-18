@@ -34,7 +34,7 @@
 %% @doc  Sends a message to apple through the connection
 -spec send_message(apns:conn_id(), apns:msg()) -> ok.
 send_message(ConnId, Msg) ->
-  gen_server:cast(ConnId, Msg).
+  gen_server:call(ConnId, Msg).
 
 %% @doc  Stops the connection
 -spec stop(apns:conn_id()) -> ok.
@@ -145,38 +145,32 @@ open_feedback(Connection) ->
   end.
 
 %% @hidden
--spec handle_call(X, reference(), state()) ->
-  {stop, {unknown_request, X}, {unknown_request, X}, state()}.
-handle_call(Request, _From, State) ->
-  {stop, {unknown_request, Request}, {unknown_request, Request}, State}.
-
-%% @hidden
--spec handle_cast(stop | apns:msg(), state()) ->
-  {noreply, state()} | {stop, normal | {error, term()}, state()}.
-handle_cast(Msg, State=#state{ out_socket = undefined
+-spec handle_call(apns:msg(), reference(), state()) ->
+  {reply, ok, state()} | {stop, {error, term()}, state()}.
+handle_call(Msg, From, State=#state{ out_socket = undefined
                              , connection = Connection
                              , info_logger_fun = InfoLoggerFun
                              , name = Name
                              }) ->
   try
-    InfoLoggerFun("[ ~p ] Reconnecting to APNS...",[Name]),
+    InfoLoggerFun("[ ~p ~p ] Reconnecting to APNS...",[Name, self()]),
     Timeout = epoch() + Connection#apns_connection.expires_conn,
     case open_out(Connection) of
-      {ok, Socket} -> handle_cast(Msg,
+      {ok, Socket} -> handle_call(Msg, From,
                                   State#state{out_socket=Socket
                                              , out_expires = Timeout});
-      {error, Reason} -> {stop, Reason}
+      {error, Reason} -> {stop, {error, Reason}}
     end
   catch
-    _:{error, Reason2} -> {stop, Reason2}
+    _:{error, Reason2} -> {stop, {error, Reason2}}
   end;
 
-handle_cast(Msg, State) when is_record(Msg, apns_msg) ->
+handle_call(Msg, From, State) when is_record(Msg, apns_msg) ->
   Socket = State#state.out_socket,
   case State#state.out_expires =< epoch() of
     true ->
       ssl:close(Socket),
-      handle_cast(Msg,State#state{out_socket = undefined});
+      handle_call(Msg, From, State#state{out_socket = undefined});
     false ->
       Connection = State#state.connection,
       Timeout = epoch() + Connection#apns_connection.expires_conn,
@@ -186,13 +180,16 @@ handle_cast(Msg, State) when is_record(Msg, apns_msg) ->
       case send_payload(State, Msg#apns_msg.id, Msg#apns_msg.expiry,
                         BinToken, Payload, Msg#apns_msg.priority) of
         ok ->
-          {noreply, State#state{out_expires = Timeout}};
+          {reply, ok, State#state{out_expires = Timeout}};
       {error, Reason} ->
         apns_queue:fail(State#state.queue, Msg#apns_msg.id),
         {stop, {error, Reason}, State}
     end
-  end;
+  end.
 
+%% @hidden
+-spec handle_cast(stop, state()) ->
+  {stop, normal, state()}.
 handle_cast(stop, State) ->
   {stop, normal, State}.
 
@@ -291,9 +288,9 @@ handle_info({ssl_closed, SslSocket}
                            , name = Name
                            }) ->
   InfoLoggerFun(
-    "[ ~p ] Feedback server disconnected. "
+    "[ ~p ~p ] Feedback server disconnected. "
     "Waiting ~p millis to connect again...",
-    [Name, Connection#apns_connection.feedback_timeout]),
+    [Name, self(), Connection#apns_connection.feedback_timeout]),
   _Timer =
     erlang:send_after(
       Connection#apns_connection.feedback_timeout, self(), reconnect),
@@ -303,7 +300,7 @@ handle_info(reconnect, State = #state{connection = Connection
                                      , info_logger_fun = InfoLoggerFun
                                      , name = Name
                                      }) ->
-  InfoLoggerFun("[ ~p ] Reconnecting the Feedback server...",[Name]),
+  InfoLoggerFun("[ ~p ~p ] Reconnecting the Feedback server...",[Name, self()]),
   case open_feedback(Connection) of
     {ok, InSocket} -> {noreply, State#state{in_socket = InSocket}};
     {error, Reason} -> {stop, {in_closed, Reason}, State}
@@ -314,7 +311,7 @@ handle_info({ssl_closed, SslSocket}
                            , info_logger_fun = InfoLoggerFun
                            , name = Name
                             }) ->
-  InfoLoggerFun("[ ~p ] APNS disconnected", [Name]),
+  InfoLoggerFun("[ ~p ~p ] APNS disconnected", [Name, self()]),
   {noreply, State#state{out_socket=undefined}};
 
 handle_info(Request, State) ->
@@ -393,8 +390,8 @@ send_payload(#state{out_socket = Socket
                 FrameLength:32/big,
                 Frame/binary>>],
     % IRCCloud Patch, this is only useful for debugging
-    % InfoLoggerFun("[ ~p ] Sending msg ~p (expires on ~p): [~B] ~s~n~p~n",
-    %                      [Name, MsgId, Expiry, erlang:size(Payload), Payload, Packet]),
+    % InfoLoggerFun("[ ~p ~p ] Sending msg ~p (expires on ~p): [~B] ~s~n~p~n",
+    %                      [Name, self(), MsgId, Expiry, erlang:size(Payload), Payload, Packet]),
     ssl:send(Socket, Packet).
 
 hexstr_to_bin(S) ->
