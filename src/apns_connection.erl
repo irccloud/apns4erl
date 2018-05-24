@@ -12,7 +12,7 @@
 
 -export([start_link/1, start_link/2, init/1, init/2, handle_call/3,
          handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--export([send_message/2, stop/1]).
+-export([send_message/2, send_message/3, stop/1]).
 -export([build_payload/1]).
 
 -record(state, {out_socket        :: tuple(),
@@ -34,7 +34,11 @@
 %% @doc  Sends a message to apple through the connection
 -spec send_message(apns:conn_id(), apns:msg()) -> ok.
 send_message(ConnId, Msg) ->
-  gen_server:call(ConnId, Msg).
+  send_message(ConnId, Msg, 5000).
+
+-spec send_message(apns:conn_id(), apns:msg(), non_neg_integer() | infinity) -> ok.
+send_message(ConnId, Msg, Timeout) ->
+  gen_server:call(ConnId, Msg, Timeout).
 
 %% @doc  Stops the connection
 -spec stop(apns:conn_id()) -> ok.
