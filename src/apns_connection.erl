@@ -163,10 +163,10 @@ handle_call(Msg, From, State=#state{ out_socket = undefined
       {ok, Socket} -> handle_call(Msg, From,
                                   State#state{out_socket=Socket
                                              , out_expires = Timeout});
-      {error, Reason} -> {stop, {error, Reason}}
+      {error, Reason} -> {stop, {error, Reason}, State}
     end
   catch
-    _:{error, Reason2} -> {stop, {error, Reason2}}
+    _:{error, Reason2} -> {stop, {error, Reason2}, State}
   end;
 
 handle_call(Msg, From, State) when is_record(Msg, apns_msg) ->
@@ -213,12 +213,12 @@ handle_info(init_sockets, State = #state{connection=Connection}) ->
               in_socket  = InSocket,
               out_expires = Timeout
             }};
-          {error, Reason} -> {stop, Reason}
+          {error, Reason} -> {stop, Reason, State}
         end;
-      {error, Reason} -> {stop, Reason}
+      {error, Reason} -> {stop, Reason, State}
     end
   catch
-    _:{error, Reason2} -> {stop, Reason2}
+    _:{error, Reason2} -> {stop, Reason2, State}
   end;
 
 handle_info( {ssl, SslSocket, Data}

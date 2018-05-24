@@ -1,8 +1,8 @@
-{"1.0.6-ircccloud-20180518",
- [{"1.0.6-ircccloud-20180517",[
+{"1.0.6-ircccloud-20180524",
+ [{"1.0.6-ircccloud-20180518",[
     {load_module,apns},
     {load_module,apns_connection},
     {load_module,apns_queue},
     {load_module,apns_sup}
  ]}],
- [{"1.0.6-ircccloud-20180517",[]}]}.
+ [{"1.0.6-ircccloud-20180518",[]}]}.
